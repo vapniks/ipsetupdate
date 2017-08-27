@@ -8,7 +8,7 @@ where:
 
  -h            = show this help  
  -n <NAME>     = name of ipset to create/add to (if it doesnt yet exist it will be created)  
- -t <TYPE>     = type of ipset, default is \"${DEFAULTSETTYPE}\"  
+ -t <TYPE>     = type of ipset, default is \"hash:net\"  
  -p            = append only (dont flush the ipset before adding)  
  -c \"<OPTS>\"   = options for 'ipset create' (see ipset manpage)  
  -a \"<OPTS>\"   = options for 'ipset add' (see ipset manpage)  
