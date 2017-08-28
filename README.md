@@ -6,11 +6,11 @@ This can be useful for creating tight iptables firewalls.
 Usage: ipsetupdate.sh -n <NAME> [-h] [-p] [-c \"<OPTS>\"] [-a \"<OPTS>\"] [-i \"<ELEM>..\"] [-f \"<FILE>..\"] [-u \"<URL>..\"]  
 where: 
 
- -h            = show this help  
- -l	       = list information about existing ipsets  
- -n <NAME>     = name of ipset to create/add to (if it doesnt yet exist it will be created)  
- -t <TYPE>     = type of ipset, default is \"hash:net\"  
- -p            = append only (dont flush the ipset before adding)  
+ -h              = show this help  
+ -l	             = list information about existing ipsets  
+ -n <NAME>       = name of ipset to create/add to (if it doesnt yet exist it will be created)  
+ -t <TYPE>       = type of ipset, default is \"hash:net\"  
+ -p              = append only (dont flush the ipset before adding)  
  -c \"<OPTS>\"   = options for 'ipset create' (see ipset manpage)  
  -a \"<OPTS>\"   = options for 'ipset add' (see ipset manpage)  
  -i \"<ELEM>..\" = list of elements to add to the ipset (IP/MAC addresses, ports, etc - see ipset manpage)  

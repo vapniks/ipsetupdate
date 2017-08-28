@@ -19,7 +19,8 @@
 # along with this program; see the file COPYING.
 # If not, see <http://www.gnu.org/licenses/>.
 
-
+# location of ipset binary
+IPSET=/sbin/ipset
 # Set initial default values
 SETNAME=
 SETTYPE=
@@ -97,8 +98,8 @@ if [ -n "${LIST}" ]; then
     TOTALNUM=0
     TOTALMEM=0
     TOTALMAX=0
-    for name in $(ipset -n list); do
-	IPSETINFO="$(ipset list ${name} 2>/dev/null)"
+    for name in $($IPSET -n list); do
+	IPSETINFO="$($IPSET list ${name} 2>/dev/null)"
 	if [[ "$?" -eq 0 ]]; then
 	    IPSETTYPE="${${IPSETINFO##*Type: }//$'\n'Revision*}"
 	    IPSETNUM="${IPSETINFO:+$(($(echo ${IPSETINFO##*Members:}|wc -l)-1))}"
@@ -151,7 +152,7 @@ checkinstalled() {
 }
 
 ## Check that ipset is installed.
-checkinstalled ipset >/dev/null
+checkinstalled $IPSET >/dev/null
 # check for a reverse DNS lookup command.
 DNSCMD="$(checkinstalled dig nslookup host)"
 ## Function which prints a list of IP addresses corresponding to a list of domain names (given as args).
@@ -179,16 +180,16 @@ reversedns() {
 
 
 # create the new set if it doesnt already exist
-if ! ipset -q list "${SETNAME}" >/dev/null ; then
+if ! $IPSET -q list "${SETNAME}" >/dev/null ; then
     # set the typename to default value if not already set
     if [ -z "${SETTYPE}" ]; then
 	SETTYPE="${DEFAULTSETTYPE}"
     fi
-    ipset create ${SETNAME} ${SETTYPE} ${CREATEOPTS[@]}
+    $IPSET create ${SETNAME} ${SETTYPE} ${CREATEOPTS[@]}
     APPENDONLY=1
 else
     # if it already exists then check that the types match
-    OLDSETTYPE="${${$(ipset -t list ${SETNAME})##*Type: }%%$'\n'*}"
+    OLDSETTYPE="${${$($IPSET -t list ${SETNAME})##*Type: }%%$'\n'*}"
     if [ -z "${SETTYPE}" ]; then
 	SETTYPE="${OLDSETTYPE}"
     elif [ "${SETTYPE}" != "${OLDSETTYPE}" ]; then
@@ -250,8 +251,8 @@ fi
 # If we dont need to replace the existing ipset then we can just add elements to it.
 if [ -n "${APPENDONLY}" ]; then
     for elem in "${NEWELEMS[@]}"; do
-	if ! ipset test ${SETNAME} ${elem} 2>/dev/null ; then
-	    ipset add ${SETNAME} ${elem} ${ADDOPTS[@]}
+	if ! $IPSET test ${SETNAME} ${elem} 2>/dev/null ; then
+	    $IPSET add ${SETNAME} ${elem} ${ADDOPTS[@]}
 	fi
     done
 else
@@ -261,19 +262,19 @@ else
     # temporary ipset name
     TMP_SETNAME="tmp_$$"
     # create the temporary ipset
-    ipset create ${TMP_SETNAME} ${SETTYPE} ${CREATEOPTS[@]}
+    $IPSET create ${TMP_SETNAME} ${SETTYPE} ${CREATEOPTS[@]}
     # add elements to it
     for elem in "${NEWELEMS[@]}"; do
-	if ! ipset test ${TMP_SETNAME} ${elem} 2>/dev/null ; then
-	    ipset add ${TMP_SETNAME} ${elem} ${ADDOPTS[@]}
+	if ! $IPSET test ${TMP_SETNAME} ${elem} 2>/dev/null ; then
+	    $IPSET add ${TMP_SETNAME} ${elem} ${ADDOPTS[@]}
 	    if [[ "$?" -eq 1 ]]; then	    
-		ipset destroy ${TMP_SETNAME}
+		$IPSET destroy ${TMP_SETNAME}
 		exit 1
 	    fi
 	fi
     done
     # overwrite old ipset with the temp one
-    ipset swap ${TMP_SETNAME} ${SETNAME}
+    $IPSET swap ${TMP_SETNAME} ${SETNAME}
     # destroy the temporary ipset
-    ipset destroy ${TMP_SETNAME}
+    $IPSET destroy ${TMP_SETNAME}
 fi
