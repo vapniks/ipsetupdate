@@ -221,10 +221,12 @@ PORTRX2="(${PROTORX}:)?${PORTRX}(-${PORTRX})?"
 ELEMRX="${${${${${SETTYPE#*:}//(ip|net)/${IPRX}}//mac/${MACRX}}//port/${PORTRX2}}//iface/${IFACERX}}"
 
 # Add elements from FILES and URLS
-for file in "${FILES[@]}"; do
-    # remove duplicated and commented lines before extracting elements
-    ELEMS+=("${(f)$(sort -u <${file}|sed 's/ *[;#].*//g'|egrep ${ELEMRX})}")
-done
+if [ -n "$FILES" ]; then
+   for file in "${FILES[@]}"; do
+       # remove duplicated and commented lines before extracting elements
+       ELEMS+=("${(f)$(sort -u <${file}|sed 's/ *[;#].*//g'|egrep ${ELEMRX})}")
+   done
+fi
 if [ -n "$URLS" ]; then
     URLCMD="$(checkinstalled curl wget)"
     for url in "${URLS[@]}"; do
