@@ -25,11 +25,13 @@ SETNAME=
 SETTYPE=
 DEFAULTSETTYPE="hash:net"
 APPENDONLY=
+LIST=
 # USAGE STRING
-USAGE="Usage: ipsetupdate.sh -n <NAME> [-h] [-p] [-c \"<OPTS>\"] [-a \"<OPTS>\"] [-i \"<ELEM>..\"] [-f \"<FILE>..\"] [-u \"<URL>..\"]
+USAGE="Usage: ipsetupdate.sh -n <NAME> [-h|-l] [-p] [-c \"<OPTS>\"] [-a \"<OPTS>\"] [-i \"<ELEM>..\"] [-f \"<FILE>..\"] [-u \"<URL>..\"]
 where: 
 
  -h            = show this help
+ -l	       = list information about existing ipsets 
  -n <NAME>     = name of ipset to create/add to (if it doesnt yet exist it will be created)
  -t <TYPE>     = type of ipset, default is \"${DEFAULTSETTYPE}\"
  -p            = append only (dont flush the ipset before adding)
@@ -44,19 +46,22 @@ Note: domain names may be used instead of IP addresses in which case a reverse D
 
 # arrays
 typeset -a CREATEOPTS ADDOPTS ELEMS FILES URLS
-# quit if not enough arguments passed
-if [[ "$#" -lt 2 ]]; then
+# quit if no arguments passed print $USAGE
+if [[ "$#" -lt 1 ]]; then
     echo "${USAGE}"
     exit 1
 fi
 # PARSE COMMAND LINE OPTIONS.
 ## Variables: OPTIND=index of next argument to be processed, OPTARG=set to current option argument
 ## Place a colon after every option that has an argument (initial colon means silent error reporting mode)
-while getopts "hpn:t:c:a:i:f:" option; do
+while getopts "hlpn:t:c:a:i:f:" option; do
     case $option in
 	(h)
 	    echo "$USAGE"
 	    exit
+	    ;;
+	(l)
+	    LIST=1
 	    ;;
         (\?)
 	    echo "$USAGE"
@@ -64,34 +69,56 @@ while getopts "hpn:t:c:a:i:f:" option; do
 	    ;;
       	(p)
 	    APPENDONLY=1
-	    #echo "APPENDONLY=$APPENDONLY"
 	    ;;
 	(n)
 	    SETNAME="${OPTARG}"
-	    #echo "SETNAME=$SETNAME"
 	    ;;
 	(t)
 	    SETTYPE="${OPTARG}"
-	    #echo "SETTYPE=$SETTYPE"
 	    ;;
 	(c)
 	    CREATEOPTS="${(z)OPTARG}"
-	    #echo "CREATEOPTS=$CREATEOPTS"
 	    ;;
 	(a)
 	    ADDOPTS="${(z)OPTARG}"
-	    #echo "ADDOPTS=$ADDOPTS"
 	    ;;
 	(i)
 	    ELEMS="${(z)OPTARG}"
-	    #echo "ELEMS=$ELEMS"
 	    ;;
 	(f)
 	    FILES="${(z)OPTARG}"
-	    #echo "FILES=$FILES"
 	    ;;
     esac 
 done
+# If called with -l option just list the ipsets in a table
+if [ -n "${LIST}" ]; then
+    FORMATSTR="%-10s %-20s %-10s %-10s %-10s\n"
+    printf "${FORMATSTR}" "NAME" "TYPE" "NUM ELEMS" "MAX ELEMS" "MEMSIZE (BYTES)"
+    TOTALNUM=0
+    TOTALMEM=0
+    TOTALMAX=0
+    for name in $(ipset -n list); do
+	IPSETINFO="$(ipset list ${name} 2>/dev/null)"
+	if [[ "$?" -eq 0 ]]; then
+	    IPSETTYPE="${${IPSETINFO##*Type: }//$'\n'Revision*}"
+	    IPSETNUM="${IPSETINFO:+$(($(echo ${IPSETINFO##*Members:}|wc -l)-1))}"
+	    IPSETMAX="${${IPSETINFO##*maxelem }//$'\n'Size in memory*}"
+	    IPSETMEM="${${IPSETINFO##*memory: }//$'\n'References*}"
+	    TOTALNUM=$(( $IPSETNUM + $TOTALNUM ))
+	    TOTALMEM=$(( $IPSETMEM + $TOTALMEM ))
+	    TOTALMAX=$(( $IPSETMAX + $TOTALMAX ))
+	else
+	    IPSETTYPE="---"
+	    IPSETNUM="---"
+	    IPSETMEM="---"
+	    IPSETMAX="---"
+	fi
+	printf "${FORMATSTR}" "${name}" "${IPSETTYPE}" "${IPSETNUM}" "${IPSETMAX}" "${IPSETMEM}"
+    done
+    printf "${FORMATSTR}" "TOTAL:" "---" "${TOTALNUM}" "${TOTALMAX}" "${TOTALMEM}"
+    exit
+fi
+
 # check we have a name for the ipset 
 if [ -z "${SETNAME}" ]; then
     echo "Error: a name (-n) argument must be supplied
@@ -149,6 +176,7 @@ reversedns() {
 	esac
     done
 }
+
 
 # create the new set if it doesnt already exist
 if ! ipset -q list "${SETNAME}" >/dev/null ; then
