@@ -7,6 +7,7 @@ Usage: ipsetupdate.sh -n <NAME> [-h] [-p] [-c \"<OPTS>\"] [-a \"<OPTS>\"] [-i \"
 where: 
 
  -h            = show this help  
+ -l	       = list information about existing ipsets  
  -n <NAME>     = name of ipset to create/add to (if it doesnt yet exist it will be created)  
  -t <TYPE>     = type of ipset, default is \"hash:net\"  
  -p            = append only (dont flush the ipset before adding)  
