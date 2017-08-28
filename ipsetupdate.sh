@@ -40,10 +40,12 @@ where:
  -a \"<OPTS>\"   = options for 'ipset add' (see ipset manpage)
  -i \"<ELEM>..\" = list of elements to add to the ipset (IP/MAC addresses, ports, etc - see ipset manpage)
  -f \"<FILE>..\" = list of files containing elements to add to the ipset (one element per line)
+ -u \"<URL>..\"  = list of URLs to webpages containing elements to add to the ipset (one element per line)
 
 Note: domain names may be used instead of IP addresses in which case a reverse DNS lookup will be performed and 
       elements for each corresponding IP address will be added.
-      For example imap.google.com,tcp:993 would be replaced by: 74.125.71.108,tcp:993 and 74.125.71.109,tcp:993\n"
+      For example imap.google.com,tcp:993 would be replaced by: 74.125.71.108,tcp:993 and 74.125.71.109,tcp:993
+      Also lines starting with # or ; in files or webpages will be treated as comments and ignored\n"
 
 # arrays
 typeset -a CREATEOPTS ADDOPTS ELEMS FILES URLS
@@ -55,7 +57,7 @@ fi
 # PARSE COMMAND LINE OPTIONS.
 ## Variables: OPTIND=index of next argument to be processed, OPTARG=set to current option argument
 ## Place a colon after every option that has an argument (initial colon means silent error reporting mode)
-while getopts "hlpn:t:c:a:i:f:" option; do
+while getopts "hlpn:t:c:a:i:f:u:" option; do
     case $option in
 	(h)
 	    echo "$USAGE"
@@ -89,8 +91,16 @@ while getopts "hlpn:t:c:a:i:f:" option; do
 	(f)
 	    FILES="${(z)OPTARG}"
 	    ;;
+	(u)
+	    URLS="${(z)OPTARG}"
+	    ;;
+	(*)
+	    echo "Invalid option"
+	    exit 1
+	    ;;
     esac 
 done
+
 # If called with -l option just list the ipsets in a table
 if [ -n "${LIST}" ]; then
     FORMATSTR="%-10s %-20s %-10s %-10s %-10s\n"
@@ -140,9 +150,9 @@ fi
 ## then it will exit the script with an error (after printing a message).
 checkinstalled() {
     for cmd in "${@}"; do
-	which "${cmd}" 2>/dev/null 1>/dev/null
+	instcmd="$(which ${cmd} 2>/dev/null)"
 	if [[ "$?" -eq 0 ]]; then
-	    echo "${cmd}"
+	    echo "${instcmd}"
 	    return 0
 	fi
     done
@@ -160,21 +170,16 @@ DNSCMD="$(checkinstalled dig nslookup host)"
 reversedns() {
     for host in "${@}"; do
 	# do the reverse DNS lookup
-	case "${DNSCMD}"; in
-	    dig)
-		dig +short "${host}" | grep '^[0-9.]\+$'
-		;;
-	    host)
-		host "${host}" | awk -e '/has address/ {print $4}'
-		;;
-	    nslookup)
-		nslookup "${host}" | awk -e '/^Address: / { print $2 }'
-		;;
-	    *)
-		echo "Invalid reverse DNS lookup command!"
-		exit 1
-		;;
-	esac
+	if [[ "${DNSCMD}" =~ dig ]]; then
+	    "${DNSCMD}" +short "${host}" | grep '^[0-9.]\+$'
+	elif [[ "${DNSCMD}" =~ host ]]; then
+	     "${DNSCMD}" "${host}" | awk -e '/has address/ {print $4}'
+	elif [[ "${DNSCMD}" =~ nslookup ]]; then
+	     "${DNSCMD}" "${host}" | awk -e '/^Address: / { print $2 }'
+	else
+	    echo "Invalid reverse DNS lookup command!"
+	    exit 1
+	fi	    
     done
 }
 
@@ -215,11 +220,25 @@ PORTRX2="(${PROTORX}:)?${PORTRX}(-${PORTRX})?"
 # create regexp to match elements for this type of ipset
 ELEMRX="${${${${${SETTYPE#*:}//(ip|net)/${IPRX}}//mac/${MACRX}}//port/${PORTRX2}}//iface/${IFACERX}}"
 
-# Add elements from FILES
+# Add elements from FILES and URLS
 for file in "${FILES[@]}"; do
     # remove duplicated and commented lines before extracting elements
     ELEMS+=("${(f)$(sort -u <${file}|sed 's/ *[;#].*//g'|egrep ${ELEMRX})}")
 done
+if [ -n "$URLS" ]; then
+    URLCMD="$(checkinstalled curl wget)"
+    for url in "${URLS[@]}"; do
+	if [[ "${URLCMD}" =~ curl ]]; then
+	    ELEMS+=("${(f)$(${URLCMD} -L -v -s -k ${url} 2>/dev/null|sed 's/ *[;#].*//g'|egrep ${ELEMRX})}")
+	elif [[ "${URLCMD}" =~ wget ]]; then
+	    ELEMS+=("${(f)$(${URLCMD} -qO- ${url} 2>/dev/null|sed 's/ *[;#].*//g'|egrep ${ELEMRX})}")
+	else
+	    echo "Invalid URL download command!"
+	    exit 1
+	fi
+    done
+fi
+
 
 # Convert ALL domain names to IP addresses
 NEWELEMS=()
