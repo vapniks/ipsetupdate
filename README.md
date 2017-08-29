@@ -1,5 +1,6 @@
 # ipsetupdate
-zsh script for updating ipsets using domain names aswell as IP addresses
+zsh script for updating ipsets using domain names aswell as IP addresses.  
+See also https://github.com/ChiefGyk/ipsets-persistent
 
 This can be useful for blacklisting IP addresses with iptables, e.g. see http://iplists.firehol.org/
 
@@ -22,3 +23,5 @@ Note: domain names may be used instead of IP addresses in which case a reverse D
       elements for each corresponding IP address will be added.  
       For example imap.google.com,tcp:993 would be replaced by: 74.125.71.108,tcp:993 and 74.125.71.109,tcp:993  
       Also lines starting with # or ; in files or webpages will be treated as comments and ignored  
+
+
