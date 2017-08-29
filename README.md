@@ -10,14 +10,14 @@ where:
  -h              = show this help  
  -l	             = list information about existing ipsets  
  -d	             = debug - print IP addresses to be added to ipset without actually adding them  
- -n <NAME>       = name of ipset to create/add to (if it doesnt yet exist it will be created)  
- -t <TYPE>       = type of ipset, default is \"hash:net\"  
+ -n \<NAME\>       = name of ipset to create/add to (if it doesnt yet exist it will be created)  
+ -t \<TYPE\>       = type of ipset, default is \"hash:net\"  
  -p              = append only (dont flush the ipset before adding)  
- -c \"<OPTS>\"   = options for 'ipset create' (see ipset manpage)  
- -a \"<OPTS>\"   = options for 'ipset add' (see ipset manpage)  
- -i \"<ELEM>..\" = list of elements to add to the ipset (IP/MAC addresses, ports, etc - see ipset manpage)  
- -f \"<FILE>..\" = list of files containing elements to add to the ipset (one element per line)  
- -u \"<URL>..\"  = list of URLs to webpages containing elements to add to the ipset (one element per line)  
+ -c \"\<OPTS\>\"   = options for 'ipset create' (see ipset manpage)  
+ -a \"\<OPTS\>\"   = options for 'ipset add' (see ipset manpage)  
+ -i \"\<ELEM\>..\" = list of elements to add to the ipset (IP/MAC addresses, ports, etc - see ipset manpage)  
+ -f \"\<FILE\>..\" = list of files containing elements to add to the ipset (one element per line)  
+ -u \"\<URL\>..\"  = list of URLs to webpages containing elements to add to the ipset (one element per line)  
  
 Note: domain names may be used instead of IP addresses in which case a reverse DNS lookup will be performed and  
       elements for each corresponding IP address will be added.  
