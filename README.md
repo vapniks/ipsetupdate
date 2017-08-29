@@ -8,6 +8,7 @@ where:
 
  -h              = show this help  
  -l	             = list information about existing ipsets  
+ -d	             = debug - print IP addresses to be added to ipset without actually adding them  
  -n <NAME>       = name of ipset to create/add to (if it doesnt yet exist it will be created)  
  -t <TYPE>       = type of ipset, default is \"hash:net\"  
  -p              = append only (dont flush the ipset before adding)  

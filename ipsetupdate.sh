@@ -33,6 +33,7 @@ where:
 
  -h            = show this help
  -l	       = list information about existing ipsets 
+ -d	       = debug - print ipset commands that would be run without actually running them
  -n <NAME>     = name of ipset to create/add to (if it doesnt yet exist it will be created)
  -t <TYPE>     = type of ipset, default is \"${DEFAULTSETTYPE}\"
  -p            = append only (dont flush the ipset before adding)
@@ -57,7 +58,7 @@ fi
 # PARSE COMMAND LINE OPTIONS.
 ## Variables: OPTIND=index of next argument to be processed, OPTARG=set to current option argument
 ## Place a colon after every option that has an argument (initial colon means silent error reporting mode)
-while getopts "hlpn:t:c:a:i:f:u:" option; do
+while getopts "hldpn:t:c:a:i:f:u:" option; do
     case $option in
 	(h)
 	    echo "$USAGE"
@@ -65,6 +66,10 @@ while getopts "hlpn:t:c:a:i:f:u:" option; do
 	    ;;
 	(l)
 	    LIST=1
+	    ;;
+	(d)
+	    DEBUG=1
+	    echo "Debug mode:"
 	    ;;
         (\?)
 	    echo "$USAGE"
@@ -185,12 +190,16 @@ reversedns() {
 
 
 # create the new set if it doesnt already exist
-if ! $IPSET -q list "${SETNAME}" >/dev/null ; then
+if ! $IPSET -q list "${SETNAME}" >/dev/null && [ -z "${DEBUG}" ] ; then
     # set the typename to default value if not already set
     if [ -z "${SETTYPE}" ]; then
 	SETTYPE="${DEFAULTSETTYPE}"
     fi
-    $IPSET create ${SETNAME} ${SETTYPE} ${CREATEOPTS[@]}
+    if [ -z "${DEBUG}" ]; then
+	${IPSET} create ${SETNAME} ${SETTYPE} ${CREATEOPTS[@]}
+    else
+	echo "${IPSET} create ${SETNAME} ${SETTYPE} ${CREATEOPTS[@]}"
+    fi
     APPENDONLY=1
 else
     # if it already exists then check that the types match
@@ -273,7 +282,11 @@ fi
 if [ -n "${APPENDONLY}" ]; then
     for elem in "${NEWELEMS[@]}"; do
 	if ! $IPSET test ${SETNAME} ${elem} 2>/dev/null ; then
-	    $IPSET add ${SETNAME} ${elem} ${ADDOPTS[@]}
+	    if [ -z "${DEBUG}" ]; then
+		$IPSET add ${SETNAME} ${elem} ${ADDOPTS[@]}
+	    else
+		echo "$IPSET add ${SETNAME} ${elem} ${ADDOPTS[@]}"
+	    fi
 	fi
     done
 else
@@ -283,19 +296,30 @@ else
     # temporary ipset name
     TMP_SETNAME="tmp_$$"
     # create the temporary ipset
-    $IPSET create ${TMP_SETNAME} ${SETTYPE} ${CREATEOPTS[@]}
+    if [ -z "${DEBUG}" ]; then
+	$IPSET create ${TMP_SETNAME} ${SETTYPE} ${CREATEOPTS[@]}
+    else
+	echo "$IPSET create ${TMP_SETNAME} ${SETTYPE} ${CREATEOPTS[@]}"
+    fi
     # add elements to it
     for elem in "${NEWELEMS[@]}"; do
-	if ! $IPSET test ${TMP_SETNAME} ${elem} 2>/dev/null ; then
+	if [ -z "${DEBUG}" ]; then
 	    $IPSET add ${TMP_SETNAME} ${elem} ${ADDOPTS[@]}
 	    if [[ "$?" -eq 1 ]]; then	    
 		$IPSET destroy ${TMP_SETNAME}
 		exit 1
 	    fi
+	else
+	    echo "$IPSET add ${TMP_SETNAME} ${elem} ${ADDOPTS[@]}"
 	fi
     done
-    # overwrite old ipset with the temp one
-    $IPSET swap ${TMP_SETNAME} ${SETNAME}
-    # destroy the temporary ipset
-    $IPSET destroy ${TMP_SETNAME}
+    if [ -z "{$DEBUG}" ]; then
+	# overwrite old ipset with the temp one
+	$IPSET swap ${TMP_SETNAME} ${SETNAME}
+	# destroy the temporary ipset
+	$IPSET destroy ${TMP_SETNAME}
+    else
+	echo "$IPSET swap ${TMP_SETNAME} ${SETNAME}"
+	echo "$IPSET destroy ${TMP_SETNAME}"
+    fi
 fi
