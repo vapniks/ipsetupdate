@@ -233,23 +233,22 @@ ELEMRX="${${${${${SETTYPE#*:}//(ip|net)/${IPRX}}//mac/${MACRX}}//port/${PORTRX2}
 if [ -n "$FILES" ]; then
    for file in "${FILES[@]}"; do
        # remove duplicated and commented lines before extracting elements
-       ELEMS+=("${(f)$(sort -u <${file}|sed 's/ *[;#].*//g'|egrep ${ELEMRX})}")
+       ELEMS+=("${(f)$(sort -u <${file}|sed 's/ *[;#].*//g'|egrep -o ${ELEMRX})}")
    done
 fi
 if [ -n "$URLS" ]; then
     URLCMD="$(checkinstalled curl wget)"
     for url in "${URLS[@]}"; do
 	if [[ "${URLCMD}" =~ curl ]]; then
-	    ELEMS+=("${(f)$(${URLCMD} -L -v -s -k ${url} 2>/dev/null|sed 's/ *[;#].*//g'|egrep ${ELEMRX})}")
+	    ELEMS+=("${(f)$(${URLCMD} -L -v -s -k ${url} 2>/dev/null|sed 's/ *[;#].*//g'|egrep -o ${ELEMRX})}")
 	elif [[ "${URLCMD}" =~ wget ]]; then
-	    ELEMS+=("${(f)$(${URLCMD} -qO- ${url} 2>/dev/null|sed 's/ *[;#].*//g'|egrep ${ELEMRX})}")
+	    ELEMS+=("${(f)$(${URLCMD} -qO- ${url} 2>/dev/null|sed 's/ *[;#].*//g'|egrep -o ${ELEMRX})}")
 	else
 	    echo "Invalid URL download command!"
 	    exit 1
 	fi
     done
 fi
-
 
 # Convert ALL domain names to IP addresses
 NEWELEMS=()
