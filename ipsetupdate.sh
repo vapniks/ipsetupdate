@@ -312,7 +312,7 @@ else
 	    echo "${IPSET} add ${TMP_SETNAME} ${elem} ${ADDOPTS[@]}"
 	fi
     done
-    if [ -z "{$DEBUG}" ]; then
+    if [ -z "${DEBUG}" ]; then
 	# overwrite old ipset with the temp one
 	${IPSET} swap ${TMP_SETNAME} ${SETNAME}
 	# destroy the temporary ipset
