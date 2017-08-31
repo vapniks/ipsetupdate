@@ -1,0 +1,95 @@
+#!/bin/sh
+#
+#   Original written by Simon Richter <sjr@debian.org>
+#   modified by Jonathan Wiltshire <jmw@debian.org>
+#   with help from Christoph Anton Mitterer
+#   and again by Jordan Rinke <me@jordanrinke.com>
+#   and again by Joe Bloggs (deleted saving/restoring of iptables rules).
+
+### BEGIN INIT INFO
+# Provides:          ipset-persistent
+# Required-Start:    mountkernfs $local_fs
+# Required-Stop:     $local_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# X-Start-Before:    $network
+# X-Stop-After:      $network
+# Short-Description: Set up ipsets
+# Description:       Loads/saves current ipsets from/to /etc/iptables/rules.ipsets
+#  to provide a persistent ipsets
+### END INIT INFO
+
+. /lib/lsb/init-functions
+
+rc=0
+
+load_sets()
+{
+    log_action_begin_msg "Loading ipsets"
+
+    #load IPsets        
+    if [ ! -f /etc/iptables/rules.ipsets ]; then
+	log_action_cont_msg " skipping IPsets (no rules to load)"
+    else
+	log_action_cont_msg " IPset"
+	ipset restore -! < /etc/iptables/rules.ipsets 2> /dev/null
+	if [ $? -ne 0 ]; then
+	    rc=1
+	fi
+    fi
+
+    log_action_end_msg $rc
+}
+
+save_sets()
+{
+    log_action_begin_msg "Saving ipsets"
+
+    #save IPsets
+    if ! ipset list | grep -i "name">/dev/null 2>&1; then
+	log_action_cont_msg " skipping IPset - no sets defined or not loaded"
+    elif [ -x /usr/sbin/ipset ] || [ -x /sbin/ipset ]; then
+	log_action_cont_msg " IPset"
+	ipset save | grep -iv "f2b"> /etc/iptables/rules.ipsets
+	if [ $? -ne 0 ]; then
+	    rc=1
+	fi
+    fi
+
+    log_action_end_msg $rc
+}
+
+flush_sets()
+{
+    log_action_begin_msg "Flushing rules"
+
+    if ! ipset list | grep -i "name">/dev/null 2>&1; then
+	log_action_cont_msg " skipping IPset (no sets defined or not installed)"
+    elif [ -x /usr/sbin/ipset ] || [ -x /sbin/ipset ]; then
+	log_action_cont_msg " IPset"
+	ipset flush
+    fi
+
+    log_action_end_msg 0
+}
+
+case "$1" in
+    start|restart|reload|force-reload)
+	load_sets
+	;;
+    save)
+	save_sets
+	;;
+    stop)
+	save_sets
+	;;
+    flush)
+	flush_sets
+	;;
+    *)
+	echo "Usage: $0 {start|restart|reload|force-reload|save|flush}" >&2
+	exit 1
+	;;
+esac
+
+exit $rc
