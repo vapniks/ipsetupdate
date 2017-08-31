@@ -1,6 +1,6 @@
 # ipsetupdate
 zsh script for updating ipsets using domain names aswell as IP addresses.  
-See also https://github.com/ChiefGyk/ipsets-persistent
+Also included is a sysvinit script for saving ipsets between reboots.  
 
 This can be useful for blacklisting IP addresses with iptables, e.g. see http://iplists.firehol.org/
 
