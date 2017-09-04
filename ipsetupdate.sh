@@ -242,24 +242,23 @@ if [ -z "${STRICT}" ]; then
     IPRX="${NETRX}"
 fi
 
-
 # create regexp to match elements for this type of ipset
-ELEMRX="${${${${${${SETTYPE#*:}//ip/${IPRX}}//net/${NETRX}}//mac/${MACRX}}//port/${PORTRX}}//iface/${IFACERX}}"
+ELEMRX="${${${${${${SETTYPE#*:}//ip/${IPRX}}//net/${NETRX}}//mac/${MACRX}}//port/${PORTRX}}//iface/${IFACERX}}(?=([[:blank:]]+|$))"
 
 # Add elements from FILES and URLS
 if [ -n "$FILES" ]; then
    for file in "${FILES[@]}"; do
        # remove duplicated and commented lines before extracting elements
-       ELEMS+=("${(f)$(sort -u <${file}|sed 's/ *[;#].*//g'|egrep -o ${ELEMRX})}")
+       ELEMS+=("${(f)$(sort -u <${file}|sed 's/ *[;#].*//g'|grep -P -o ${ELEMRX})}")
    done
 fi
 if [ -n "$URLS" ]; then
     URLCMD="$(checkinstalled curl wget)"
     for url in "${URLS[@]}"; do
 	if [[ "${URLCMD}" =~ curl ]]; then
-	    ELEMS+=("${(f)$(${URLCMD} -L -v -s -k ${url} 2>/dev/null|sed 's/ *[;#].*//g'|egrep -o ${ELEMRX})}")
+	    ELEMS+=("${(f)$(${URLCMD} -L -v -s -k ${url} 2>/dev/null|sed 's/ *[;#].*//g'|grep -P -o ${ELEMRX})}")
 	elif [[ "${URLCMD}" =~ wget ]]; then
-	    ELEMS+=("${(f)$(${URLCMD} -qO- ${url} 2>/dev/null|sed 's/ *[;#].*//g'|egrep -o ${ELEMRX})}")
+	    ELEMS+=("${(f)$(${URLCMD} -qO- ${url} 2>/dev/null|sed 's/ *[;#].*//g'|grep -P -o ${ELEMRX})}")
 	else
 	    echo "Invalid URL download command!"
 	    exit 1
