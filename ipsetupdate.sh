@@ -215,19 +215,26 @@ fi
 # some regexps for matching elements
 DOMAINRX="([a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,})"
 MACRX="(([0-9a-fA-F][0-9a-fA-F]:){5}[0-9a-fA-F][0-9a-fA-F])"
-MASKRX="([0-9]|[0-2][0-9]|3[0-2])"
-PORTRX="([0-9]{1,5})"
-PROTORX="[a-z-]+"
-IFACERX="(physdev:)?[a-z0-9]{2,15}"
-IPV4RX="([0-9]{1,3}(\.[0-9]{1,3}){3}(/${MASKRX})?)"
-IPV6RX="(([0-9a-fA-F]{0,4}:){2,7}(:|[0-9a-fA-F]{1,4})(/${MASKRX})?)"
-IPV4RX2="${IPV4RX}(-${IPV4RX})?"
-IPV6RX2="${IPV6RX}(-${IPV6RX})?"
-IPRX="(${IPV4RX2}|${IPV6RX2}|${DOMAINRX})"
-PORTRX2="(${PROTORX}:)?${PORTRX}(-${PORTRX})?"
+MASK4RX="([0-9]|[0-2][0-9]|3[0-2])"
+MASK6RX="([1-9][0-9]?|1[01][0-9]|12[0-8])"
+PORTRX="(([a-z-]+:)?[0-9]{1,5}(-[0-9]{1,5})?)"
+IFACERX="((physdev:)?[a-z0-9]{2,15})"
+IPV4RX="([0-9]{1,3}(\.[0-9]{1,3}){3}|${DOMAINRX})"
+IPV4NETRX="${IPV4RX}/${MASK4RX}"
+IPV4RANGERX="${IPV4RX}-${IPV4RX}"
+IPV6RX="(([0-9a-fA-F]{0,4}:){2,7}(:|[0-9a-fA-F]{1,4}))"
+IPV6NETRX="${IPV6RX}/${MASK6RX}"
+IPV6RANGERX="${IPV6RX}-${IPV6RX}"
 
+if [[ "${CREATEOPTS}" =~ "inet6" ]]; then
+    NETRX="(${IPV6NETRX}|${IPV6RANGERX})"
+    IPRX="${IPV6RX}|${NETRX}"
+else
+    NETRX="(${IPV4NETRX}|${IPV4RANGERX})"
+    IPRX="${IPV4RX}|${NETRX}"    
+fi
 # create regexp to match elements for this type of ipset
-ELEMRX="${${${${${SETTYPE#*:}//(ip|net)/${IPRX}}//mac/${MACRX}}//port/${PORTRX2}}//iface/${IFACERX}}"
+ELEMRX="${${${${${${SETTYPE#*:}//ip/${IPRX}}//net/${NETRX}}//mac/${MACRX}}//port/${PORTRX}}//iface/${IFACERX}}"
 
 # Add elements from FILES and URLS
 if [ -n "$FILES" ]; then
