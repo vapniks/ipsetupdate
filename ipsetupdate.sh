@@ -34,6 +34,7 @@ where:
  -h            = show this help
  -l	       = list information about existing ipsets 
  -d	       = debug - print ipset commands that would be run without actually running them
+ -s	       = strict - only allow single IP addresses for ip type, and networks or ranges for net type
  -n <NAME>     = name of ipset to create/add to (if it doesnt yet exist it will be created)
  -t <TYPE>     = type of ipset, default is \"${DEFAULTSETTYPE}\"
  -p            = append only (dont flush the ipset before adding)
@@ -58,7 +59,7 @@ fi
 # PARSE COMMAND LINE OPTIONS.
 ## Variables: OPTIND=index of next argument to be processed, OPTARG=set to current option argument
 ## Place a colon after every option that has an argument (initial colon means silent error reporting mode)
-while getopts "hldpn:t:c:a:i:f:u:" option; do
+while getopts "hldspn:t:c:a:i:f:u:" option; do
     case $option in
 	(h)
 	    echo "$USAGE"
@@ -70,6 +71,9 @@ while getopts "hldpn:t:c:a:i:f:u:" option; do
 	(d)
 	    DEBUG=1
 	    echo "Debug mode:"
+	    ;;
+	(s)
+	    STRICT=1
 	    ;;
         (\?)
 	    echo "$USAGE"
@@ -228,11 +232,17 @@ IPV6RANGERX="${IPV6RX}-${IPV6RX}"
 
 if [[ "${CREATEOPTS}" =~ "inet6" ]]; then
     NETRX="(${IPV6NETRX}|${IPV6RANGERX})"
-    IPRX="${IPV6RX}|${NETRX}"
+    IPRX="${IPV6RX}"
 else
     NETRX="(${IPV4NETRX}|${IPV4RANGERX})"
-    IPRX="${IPV4RX}|${NETRX}"    
+    IPRX="${IPV4RX}" 
 fi
+if [ -z "${STRICT}" ]; then
+    NETRX="(${NETRX}|${IPRX})"
+    IPRX="${NETRX}"
+fi
+
+
 # create regexp to match elements for this type of ipset
 ELEMRX="${${${${${${SETTYPE#*:}//ip/${IPRX}}//net/${NETRX}}//mac/${MACRX}}//port/${PORTRX}}//iface/${IFACERX}}"
 
