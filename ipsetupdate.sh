@@ -117,7 +117,7 @@ if [ -n "${LIST}" ]; then
     TOTALNUM=0
     TOTALMEM=0
     TOTALMAX=0
-    for name in $(${IPSET} -n list); do
+    for name in $(${IPSET} -n list | sort); do
 	IPSETINFO="$(${IPSET} list ${name} 2>/dev/null)"
 	if [[ "$?" -eq 0 ]]; then
 	    IPSETTYPE="${${IPSETINFO##*Type: }//$'\n'Revision*}"
