@@ -112,7 +112,7 @@ done
 
 # If called with -l option just list the ipsets in a table
 if [ -n "${LIST}" ]; then
-    FORMATSTR="%-10s %-20s %-10s %-10s %-10s\n"
+    FORMATSTR="%-15s %-20s %-10s %-10s %-10s\n"
     printf "${FORMATSTR}" "NAME" "TYPE" "NUM ELEMS" "MAX ELEMS" "MEMSIZE (BYTES)"
     TOTALNUM=0
     TOTALMEM=0
